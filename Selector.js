@@ -11,9 +11,6 @@ rl.on('line', function(line) {
     case '':
       console.log('No input entered.');
       break;
-    case 'data':
-      console.table(search('Input', data));
-      break;
     default:
       parseInput(line);
   }
@@ -31,18 +28,19 @@ rl.prompt();
 const parseInput = input => {
   let results = [];
 
-  //Matches zero or more characters up to a '.' or '#'
-  // const regEx = /[^\.#\s]*/g;
-
   //Checks a capital letter or '.' or '#' followed a word
   const regEx = /[A-Z\.#\s]\w+/g;
-
   const regExArray = input.match(regEx) || [];
-  console.log(regExArray);
 
+  //If the input has a space it will search for each selector
+  if (input.includes(' ')) {
+    const newInput = input.split(' ');
+    newInput.forEach(selector => parseInput(selector));
+    return;
+  }
   if (regExArray.length === 1) {
     results = checkFirstChar(input, data);
-  } else {
+  } else if (regExArray.length > 1) {
     //If the input contains more than one selector
     results = checkFirstChar(regExArray[0], data);
 
@@ -67,7 +65,7 @@ const parseInput = input => {
       }
 
       results = results.filter(result => {
-        return type === 'classNames'
+        return result[type] && type === 'classNames'
           ? result[type].includes(searchTerm)
           : result[type] === searchTerm;
       });
@@ -75,11 +73,6 @@ const parseInput = input => {
   }
 
   console.table(results.length > 0 ? results : 'No valid results.');
-
-  //Checks a capital letter followed by words up to a '.' or '#'
-  // const regEx = /[A-Z]\w+[\.#]/g;
-
-  // while(input.includes('',1))
 };
 
 const checkFirstChar = (input, data) => {
