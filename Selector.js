@@ -6,17 +6,16 @@ const data = require('./SystemViewController.json');
 //Line event is emitted whenever input stream receives an end of line input (Like pressing enter)
 rl.on('line', function(line) {
   switch (line.trim()) {
-    case 'help':
-      console.log('me!');
-      break;
     case 'exit':
       rl.close();
+    case '':
+      console.log('No input entered.');
+      break;
     case 'data':
       console.table(search('Input', data));
       break;
     default:
       parseInput(line);
-      break;
   }
   rl.setPrompt(prefix, prefix.length);
   rl.prompt();
@@ -30,11 +29,64 @@ rl.setPrompt(prefix, prefix.length);
 rl.prompt();
 
 const parseInput = input => {
-  let firstChar = input[0].charCodeAt();
   let results = [];
 
-  //If the first character is between A-Z
+  //Matches zero or more characters up to a '.' or '#'
+  // const regEx = /[^\.#\s]*/g;
+
+  //Checks a capital letter or '.' or '#' followed a word
+  const regEx = /[A-Z\.#\s]\w+/g;
+
+  const regExArray = input.match(regEx) || [];
+  console.log(regExArray);
+
+  if (regExArray.length === 1) {
+    results = checkFirstChar(input, data);
+  } else {
+    //If the input contains more than one selector
+    results = checkFirstChar(regExArray[0], data);
+
+    for (let i = 1; i < regExArray.length; i++) {
+      let firstChar = regExArray[i].charCodeAt(0);
+      let type = '';
+      let searchTerm = regExArray[i];
+
+      //If the first character is between A-Z
+      if (firstChar >= 65 && firstChar <= 90) {
+        type = 'class';
+      } else {
+        searchTerm = searchTerm.slice(1);
+        //If the first character is a '.'
+        if (firstChar === 46) {
+          type = 'classNames';
+        }
+        //If the first character is a '#'
+        if (firstChar === 35) {
+          type = 'identifier';
+        }
+      }
+
+      results = results.filter(result => {
+        return type === 'classNames'
+          ? result[type].includes(searchTerm)
+          : result[type] === searchTerm;
+      });
+    }
+  }
+
+  console.table(results.length > 0 ? results : 'No valid results.');
+
+  //Checks a capital letter followed by words up to a '.' or '#'
+  // const regEx = /[A-Z]\w+[\.#]/g;
+
+  // while(input.includes('',1))
+};
+
+const checkFirstChar = (input, data) => {
+  let firstChar = input.charCodeAt(0);
+  let results = [];
   if (firstChar >= 65 && firstChar <= 90) {
+    //If the first character is between A-Z
     results = search(input, data, 'class');
   } else {
     input = input.slice(1);
@@ -48,7 +100,8 @@ const parseInput = input => {
       results = search(input, data, 'identifier');
     }
   }
-  console.table(results.length > 0 ? results : 'No valid results.');
+
+  return results;
 };
 
 const search = (input, data, type) => {
